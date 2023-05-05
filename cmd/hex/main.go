@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 
-	"github.com/christianvozar/hex-example/internal/adapter/kafka"
-	"github.com/christianvozar/hex-example/internal/adapter/postgres"
-	"github.com/christianvozar/hex-example/internal/usecase"
+	"github.com/christianvozar/hex-example/adapter/grpc"
+	"github.com/christianvozar/hex-example/adapter/http"
+	"github.com/christianvozar/hex-example/adapter/kafka"
+	"github.com/christianvozar/hex-example/adapter/postgres"
+	"github.com/christianvozar/hex-example/usecase"
 )
 
 func main() {
@@ -29,5 +31,19 @@ func main() {
 	// Start watching for changes in the Postgres database
 	if err := watcher.Watch(ctx); err != nil {
 		log.Fatalf("failed to watch changes: %v", err)
+	}
+
+	// Start gRPC server
+	go func() {
+		err := grpc.StartGRPCServer(watcher, ":50051")
+		if err != nil {
+			log.Fatalf("failed to start gRPC server: %v", err)
+		}
+	}()
+
+	// Start HTTP server
+	err = http.StartHTTPServer(watcher, ":8080")
+	if err != nil {
+		log.Fatalf("failed to start HTTP server: %v", err)
 	}
 }
